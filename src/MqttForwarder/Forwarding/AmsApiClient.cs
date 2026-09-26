@@ -27,7 +27,10 @@ public class AmsApiClient(HttpClient httpClient, ILogger<AmsApiClient> logger) :
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
-            logger.LogWarning(ex, "Ingestion request failed for {DeviceId}, will retry next drain cycle", deviceId);
+            logger.LogInformation(
+                "AMS API is not reachable ({Reason}). Measurements for {DeviceId} are stored locally and will be uploaded once the API is back up.",
+                ex.Message,
+                deviceId);
             return false;
         }
     }

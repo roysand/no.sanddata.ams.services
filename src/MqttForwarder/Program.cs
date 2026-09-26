@@ -11,6 +11,13 @@ HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 
 builder.Configuration.AddJsonFile("local.settings.json", optional: true, reloadOnChange: true);
 
+// Host.CreateApplicationBuilder doesn't auto-bind Logging:Console:FormatterOptions from
+// configuration the way ASP.NET Core's WebApplication.CreateBuilder does, so it's wired up
+// explicitly here - the TimestampFormat/UseUtcTimestamp values in appsettings.json now apply.
+builder.Logging.AddSimpleConsole(options => options.SingleLine = true);
+builder.Services.Configure<Microsoft.Extensions.Logging.Console.SimpleConsoleFormatterOptions>(
+    builder.Configuration.GetSection("Logging:Console:FormatterOptions"));
+
 builder.Services
     .AddOptions<MqttOptions>()
     .Bind(builder.Configuration.GetSection(MqttOptions.SectionName))
