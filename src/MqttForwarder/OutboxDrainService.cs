@@ -38,20 +38,34 @@ public class OutboxDrainService(
 
     private async Task DrainOnceAsync(CancellationToken ct)
     {
-        IReadOnlyList<OutboxEntry> pending = await outbox.GetPendingAsync(options.Value.BatchSize, ct);
-        if (pending.Count == 0)
+        // Keep pulling full batches back-to-back so a backlog (e.g. after an API outage) is
+        // cleared as fast as the API accepts it, rather than waiting one DrainIntervalSeconds
+        // per batch. Stops once a batch comes back short (outbox caught up) or nothing gets
+        // accepted (API still down; the outer loop's delay will retry on the next tick).
+        while (!ct.IsCancellationRequested)
         {
-            return;
-        }
-
-        foreach (IGrouping<string, OutboxEntry> group in pending.GroupBy(e => e.DeviceId))
-        {
-            List<OutboxEntry> readings = group.ToList();
-            bool accepted = await apiClient.IngestAsync(group.Key, readings, ct);
-            if (accepted)
+            IReadOnlyList<OutboxEntry> pending = await outbox.GetPendingAsync(options.Value.BatchSize, ct);
+            if (pending.Count == 0)
             {
-                await outbox.DeleteAsync(readings.Select(r => r.Id).ToList(), ct);
-                logger.LogInformation("Forwarded {Count} readings for {DeviceId}", readings.Count, group.Key);
+                return;
+            }
+
+            bool anyAccepted = false;
+            foreach (IGrouping<string, OutboxEntry> group in pending.GroupBy(e => e.DeviceId))
+            {
+                List<OutboxEntry> readings = group.ToList();
+                bool accepted = await apiClient.IngestAsync(group.Key, readings, ct);
+                if (accepted)
+                {
+                    await outbox.DeleteAsync(readings.Select(r => r.Id).ToList(), ct);
+                    logger.LogInformation("Forwarded {Count} readings for {DeviceId}", readings.Count, group.Key);
+                    anyAccepted = true;
+                }
+            }
+
+            if (!anyAccepted || pending.Count < options.Value.BatchSize)
+            {
+                return;
             }
         }
     }
