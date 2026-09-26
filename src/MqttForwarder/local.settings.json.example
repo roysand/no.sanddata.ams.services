@@ -1,0 +1,11 @@
+{
+  "Mqtt": {
+    "ServerUri": "192.168.1.x",
+    "UserName": "",
+    "Password": ""
+  },
+  "AmsApi": {
+    "BaseUrl": "https://localhost:7130",
+    "ApiKey": "your-api-key-here"
+  }
+}
