@@ -1,0 +1,16 @@
+[Unit]
+Description=MqttForwarder - MQTT to AMS API bridge
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=mqttforwarder
+WorkingDirectory=/opt/mqttforwarder
+ExecStart=/opt/mqttforwarder/MqttForwarder
+Restart=on-failure
+RestartSec=5
+SyslogIdentifier=mqttforwarder
+
+[Install]
+WantedBy=multi-user.target
