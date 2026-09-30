@@ -1,0 +1,82 @@
+openapi: 3.0.3
+info:
+  title: Latest EUR/NOK Exchange Rate
+  version: 1.0.0
+  description: Returns the latest published Norges Bank EUR/NOK spot observation.
+servers:
+  - url: https://{functionApp}.azurewebsites.net
+    variables:
+      functionApp:
+        default: example
+paths:
+  /api/exchange-rate/latest:
+    get:
+      operationId: getLatestEurNokRate
+      summary: Get the latest EUR/NOK rate
+      description: Returns the most recent published business-day observation, which may be dated earlier than today.
+      security:
+        - functionKey: []
+      responses:
+        "200":
+          description: Latest valid rate
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExchangeRate"
+              example:
+                baseCurrency: EUR
+                quoteCurrency: NOK
+                rate: 10.9015
+                effectiveDate: "2026-09-30"
+        "502":
+          description: Norges Bank is unavailable or returned unusable data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "504":
+          description: Norges Bank did not respond before the upstream timeout
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  securitySchemes:
+    functionKey:
+      type: apiKey
+      in: header
+      name: x-functions-key
+  schemas:
+    ExchangeRate:
+      type: object
+      additionalProperties: false
+      required:
+        - baseCurrency
+        - quoteCurrency
+        - rate
+        - effectiveDate
+      properties:
+        baseCurrency:
+          type: string
+          enum: [EUR]
+        quoteCurrency:
+          type: string
+          enum: [NOK]
+        rate:
+          type: number
+          exclusiveMinimum: 0
+          description: NOK for one EUR.
+        effectiveDate:
+          type: string
+          format: date
+    Error:
+      type: object
+      additionalProperties: false
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
