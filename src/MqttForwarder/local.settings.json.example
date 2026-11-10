@@ -1,11 +1,12 @@
 {
   "Mqtt": {
     "ServerUri": "192.168.1.x",
+    "ServerPort": 1883,
     "UserName": "",
     "Password": ""
   },
   "AmsApi": {
-    "BaseUrl": "https://localhost:7130",
+    "BaseUrl": "https://ams-api.sanddata.eu",
     "ApiKey": "your-api-key-here"
   }
 }

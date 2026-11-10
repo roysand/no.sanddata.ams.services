@@ -6,11 +6,21 @@ Wants=network-online.target
 [Service]
 Type=simple
 User=mqttforwarder
+Group=mqttforwarder
 WorkingDirectory=/opt/mqttforwarder
 ExecStart=/opt/mqttforwarder/MqttForwarder
+# The outbox (readings waiting for the API) lives in /var/lib/mqttforwarder, outside the program folder,
+# so installing a new version never touches it.
+StateDirectory=mqttforwarder
+Environment=Outbox__DbPath=/var/lib/mqttforwarder/outbox.db
 Restart=on-failure
 RestartSec=5
 SyslogIdentifier=mqttforwarder
+# The service may only write to its state directory.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
 
 [Install]
 WantedBy=multi-user.target
