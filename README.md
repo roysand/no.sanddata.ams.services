@@ -63,6 +63,8 @@ dotnet run --project src/MqttForwarder
 
 ## Running as a service (Linux x64, systemd)
 
+The full step-by-step guide, including creating the location in the web app, is in [INSTALL.md](INSTALL.md). In short:
+
 The package is self-contained: the target machine needs no .NET install. It must be able to reach the MQTT broker
 and the AMS API.
 
