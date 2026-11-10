@@ -22,7 +22,13 @@ public class AmsApiClient(HttpClient httpClient, ILogger<AmsApiClient> logger) :
             }
 
             string body = await response.Content.ReadAsStringAsync(ct);
-            logger.LogWarning("Ingestion rejected for {DeviceId}: {StatusCode} {Body}", deviceId, response.StatusCode, body);
+            string meterIds = string.Join(", ", readings.Select(r => r.MeterId).Where(id => !string.IsNullOrEmpty(id)).Distinct());
+            logger.LogWarning(
+                "Ingestion rejected for meter {MeterId} (device {DeviceId}): {StatusCode} {Body}",
+                meterIds.Length > 0 ? meterIds : "unknown",
+                deviceId,
+                response.StatusCode,
+                body);
             return false;
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
