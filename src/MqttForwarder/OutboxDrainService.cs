@@ -15,6 +15,7 @@ public class OutboxDrainService(
     IOutboxStore outbox,
     IAmsApiClient apiClient,
     IOptions<OutboxOptions> options,
+    IOptions<AmsApiOptions> apiOptions,
     ILogger<OutboxDrainService> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -54,11 +55,11 @@ public class OutboxDrainService(
             foreach (IGrouping<string, OutboxEntry> group in pending.GroupBy(e => e.DeviceId))
             {
                 List<OutboxEntry> readings = group.ToList();
-                bool accepted = await apiClient.IngestAsync(group.Key, readings, ct);
-                if (accepted)
+                IngestResult? result = await apiClient.IngestAsync(group.Key, readings, ct);
+                if (result is not null)
                 {
                     await outbox.DeleteAsync(readings.Select(r => r.Id).ToList(), ct);
-                    logger.LogInformation("Forwarded {Count} readings for {DeviceId}", readings.Count, group.Key);
+                    logger.LogInformation("Forwarded {Count} readings for {DeviceId} ({Label}) to {ApiUrl}", readings.Count, group.Key, result.Label ?? "unnamed", apiOptions.Value.BaseUrl);
                     anyAccepted = true;
                 }
             }

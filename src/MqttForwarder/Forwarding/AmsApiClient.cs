@@ -7,7 +7,7 @@ namespace MqttForwarder.Forwarding;
 
 public class AmsApiClient(HttpClient httpClient, ILogger<AmsApiClient> logger) : IAmsApiClient
 {
-    public async Task<bool> IngestAsync(string deviceId, IReadOnlyList<OutboxEntry> readings, CancellationToken ct)
+    public async Task<IngestResult?> IngestAsync(string deviceId, IReadOnlyList<OutboxEntry> readings, CancellationToken ct)
     {
         var request = new IngestRequest(
             deviceId,
@@ -18,7 +18,7 @@ public class AmsApiClient(HttpClient httpClient, ILogger<AmsApiClient> logger) :
             HttpResponseMessage response = await httpClient.PostAsJsonAsync("/api/measurements", request, ct);
             if (response.IsSuccessStatusCode)
             {
-                return true;
+                return await response.Content.ReadFromJsonAsync<IngestResult>(ct) ?? new IngestResult(null, null);
             }
 
             string body = await response.Content.ReadAsStringAsync(ct);
@@ -29,7 +29,7 @@ public class AmsApiClient(HttpClient httpClient, ILogger<AmsApiClient> logger) :
                 deviceId,
                 response.StatusCode,
                 body);
-            return false;
+            return null;
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
@@ -37,7 +37,7 @@ public class AmsApiClient(HttpClient httpClient, ILogger<AmsApiClient> logger) :
                 "AMS API is not reachable ({Reason}). Measurements for {DeviceId} are stored locally and will be uploaded once the API is back up.",
                 ex.Message,
                 deviceId);
-            return false;
+            return null;
         }
     }
 
